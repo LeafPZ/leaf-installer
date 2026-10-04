@@ -61,6 +61,10 @@ public class ClientInstaller {
         var proxyLib = Utils.getLatestLoaderProxy();
 
         String configName = String.format("leaf-%s-%s", proxy ? proxyLib.version : loaderVersion.name, gameVersion);
+
+        if (Files.exists(this.leafLibDir)) {
+            Utils.deleteDirectory(this.leafLibDir);
+        }
         Files.createDirectories(this.leafLibDir);
 
         if (proxy) {
