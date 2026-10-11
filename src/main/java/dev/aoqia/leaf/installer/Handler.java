@@ -25,7 +25,10 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -72,6 +75,9 @@ public abstract class Handler implements InstallerProgress {
     public JComboBox<String> loaderVersionComboBox;
     public JCheckBox createConfigCheckbox;
     private JPanel pane;
+    private JTextArea launchArguments;
+    private String proxyJarName;
+    private LoaderVersion customLoaderVersion;
 
     protected static Component createSpacer() {
         return Box.createRigidArea(new Dimension(4, 0));
@@ -134,6 +140,7 @@ public abstract class Handler implements InstallerProgress {
             if (!selected && Main.LOADER_META.isComplete()) {
                 updateLoaderVersions(Main.LOADER_META.getVersions());
             }
+            updateLaunchArguments();
         });
 
         addRow(pane, c, "prompt.loader.version", loaderVersionComboBox, createSpacer(), loaderProxyCheckbox);
@@ -156,32 +163,13 @@ public abstract class Handler implements InstallerProgress {
         addRow(pane, c, null, statusLabel = new JLabel());
         statusLabel.setText(Utils.BUNDLE.getString("prompt.loading.versions"));
 
+        launchArguments = new JTextArea();
+        launchArguments.setEditable(false);
+
         copyArgButton = new JButton(Utils.BUNDLE.getString("prompt.copy.arg"));
+        copyArgButton.setEnabled(false);
         copyArgButton.addActionListener(e -> {
-            StringSelection s;
-            if (loaderProxyCheckbox.isSelected()) {
-                try {
-                    String fmt = "";
-
-                    if (OperatingSystem.CURRENT == OperatingSystem.WINDOWS) {
-                        String tag = Main.LATEST_PROXY_NATIVE_TAG;
-                        fmt += String.format("-agentpath:.leaf/lib/native-%s.dll",
-                            tag.startsWith("v") ? tag.substring(1) : tag);
-                        fmt += " ";
-                    }
-
-                    fmt += String.format("-javaagent:.leaf/lib/%s", Utils.getLatestLoaderProxy().getJarName());
-
-                    s = new StringSelection(fmt);
-                } catch (IOException exc) {
-                    error(exc);
-                    return;
-                }
-            } else {
-                s = new StringSelection(String.format("-pzexeconfig leaf-%s-%s.json",
-                    queryLoaderVersion().name, gameVersionComboBox.getSelectedItem()));
-            }
-
+            StringSelection s = new StringSelection(launchArguments.getText().replace('\n', ' '));
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(s, null);
         });
 
@@ -191,11 +179,81 @@ public abstract class Handler implements InstallerProgress {
             install(loaderProxyCheckbox.isEnabled() && loaderProxyCheckbox.isSelected());
         });
 
-        addLastRow(pane, c, null, buttonInstall, copyArgButton);
+        addRow(pane, c, null, buttonInstall);
+        JSeparator separator = new JSeparator();
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        pane.add(separator, c);
+        c.gridy++;
+        addRow(pane, c, null, new JLabel(Utils.BUNDLE.getString("prompt.launch.arguments")));
+        JPanel argumentsPanel = new JPanel();
+        argumentsPanel.setOpaque(false);
+        argumentsPanel.setBorder(UIManager.getBorder("TextField.border"));
+        argumentsPanel.add(launchArguments);
+        argumentsPanel.add(copyArgButton);
+        c.insets = new Insets(VERTICAL_SPACING, HORIZONTAL_SPACING, 2, HORIZONTAL_SPACING);
+        addLastRow(pane, c, null, argumentsPanel);
+
+        gameVersionComboBox.addActionListener(e -> updateLaunchArguments());
+        loaderVersionComboBox.addActionListener(e -> {
+            if (SELECT_CUSTOM_ITEM.equals(loaderVersionComboBox.getSelectedItem())) {
+                customLoaderVersion = null;
+                customLoaderVersion = queryLoaderVersion();
+            }
+            updateLaunchArguments();
+        });
+        updateLaunchArguments();
+        new Thread(() -> {
+            try {
+                String jarName;
+                synchronized (Utils.class) {
+                    jarName = Utils.getLatestLoaderProxy().getJarName();
+                }
+                SwingUtilities.invokeLater(() -> {
+                    proxyJarName = jarName;
+                    updateLaunchArguments();
+                });
+            } catch (IOException e) {
+                SwingUtilities.invokeLater(() -> error(e));
+            }
+        }).start();
 
         installerGui.updateSize(true);
 
         return pane;
+    }
+
+    private void updateLaunchArguments() {
+        if (launchArguments == null) {
+            return;
+        }
+
+        String arguments = "";
+        if (loaderProxyCheckbox.isSelected()) {
+            if (proxyJarName != null) {
+                if (OperatingSystem.CURRENT == OperatingSystem.WINDOWS && Main.LATEST_PROXY_NATIVE_TAG != null) {
+                    String tag = Main.LATEST_PROXY_NATIVE_TAG;
+                    arguments = String.format("-agentpath:.leaf/lib/native-%s.dll\n",
+                        tag.startsWith("v") ? tag.substring(1) : tag);
+                }
+                arguments += String.format("-javaagent:.leaf/lib/%s", proxyJarName);
+                arguments += " --";
+            }
+        } else if (loaderVersionComboBox.getSelectedItem() != null && gameVersionComboBox.getSelectedItem() != null) {
+            String version = (String) loaderVersionComboBox.getSelectedItem();
+            if (SELECT_CUSTOM_ITEM.equals(version)) {
+                version = customLoaderVersion == null ? null : customLoaderVersion.name;
+            }
+            if (version != null) {
+                arguments = String.format("-pzexeconfig leaf-%s-%s.json",
+                    version, gameVersionComboBox.getSelectedItem());
+            }
+        }
+        launchArguments.setText(arguments);
+        copyArgButton.setEnabled(true);
+        if (InstallerGui.instance != null) {
+            InstallerGui.instance.updateSize(false);
+        }
     }
 
     private void updateGameVersions(List<GameMetaHandler.Version> versions) {
@@ -234,6 +292,9 @@ public abstract class Handler implements InstallerProgress {
         if (!ret.equals(SELECT_CUSTOM_ITEM)) {
             return new LoaderVersion(ret);
         } else {
+            if (customLoaderVersion != null) {
+                return customLoaderVersion;
+            }
             // ask user for loader jar
 
             JFileChooser chooser = new JFileChooser();
