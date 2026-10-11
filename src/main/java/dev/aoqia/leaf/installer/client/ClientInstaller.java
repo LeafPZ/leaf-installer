@@ -23,12 +23,14 @@ import java.text.MessageFormat;
 import org.apache.commons.collections4.iterators.IteratorChain;
 
 import dev.aoqia.leaf.installer.LoaderVersion;
+import dev.aoqia.leaf.installer.util.ClientLaunchOptions;
 import dev.aoqia.leaf.installer.util.InstallerProgress;
 import dev.aoqia.leaf.installer.util.LaunchConfigUtil;
 import dev.aoqia.leaf.installer.util.LeafService;
 import dev.aoqia.leaf.installer.util.Library;
 import dev.aoqia.leaf.installer.util.OperatingSystem;
 import dev.aoqia.leaf.installer.util.Reference;
+import dev.aoqia.leaf.installer.util.SteamLaunchOptions;
 import dev.aoqia.leaf.installer.util.Utils;
 import dev.aoqia.leaf.installer.util.json.LoaderJson;
 
@@ -49,6 +51,15 @@ public class ClientInstaller {
     }
 
     public void install(boolean proxy, boolean createConfig) throws IOException {
+        install(proxy, createConfig, false, false);
+    }
+
+    public void install(boolean proxy, boolean createConfig, boolean steamLaunchOptions, boolean alternateLaunch)
+        throws IOException
+    {
+        if (steamLaunchOptions) {
+            SteamLaunchOptions.checkSteamClosed();
+        }
         if (proxy) {
             System.out.printf("Installing leaf-loader-proxy for %s%n", gameVersion);
         } else {
@@ -61,6 +72,7 @@ public class ClientInstaller {
         var proxyLib = Utils.getLatestLoaderProxy();
 
         String configName = String.format("leaf-%s-%s", proxy ? proxyLib.version : loaderVersion.name, gameVersion);
+        String mainClass = null;
 
         if (Files.exists(this.leafLibDir)) {
             Utils.deleteDirectory(this.leafLibDir);
@@ -83,7 +95,7 @@ public class ClientInstaller {
             LoaderJson loaderVersionJson = LeafService.queryMetaJson(
                 "dist/loader/%s.json".formatted(loaderVersion.name), LoaderJson.class);
             LoaderJson.Libraries libsJson = loaderVersionJson.libraries();
-            String mainClass = loaderVersionJson.mainClass().client();
+            mainClass = loaderVersionJson.mainClass().client();
             String mainClassInternal = mainClass.replace(".", "/");
 
             // Putting loader dependency into the libs list for later download.
@@ -109,10 +121,28 @@ public class ClientInstaller {
                 }
             });
 
-            if (createConfig) {
+            if (createConfig || steamLaunchOptions) {
                 var launchConfigUtil = new LaunchConfigUtil(gameDir);
                 launchConfigUtil.createConfig(configName, mainClassInternal);
             }
+        }
+
+        String agents = String.format("-javaagent:.leaf/lib/%s", proxyLib.getJarName());
+        if (proxy && (steamLaunchOptions || alternateLaunch) && OperatingSystem.CURRENT == OperatingSystem.WINDOWS) {
+            try (var files = Files.list(leafLibDir)) {
+                String nativeName = files.filter(Files::isRegularFile).map(path -> path.getFileName().toString())
+                    .filter(name -> name.startsWith("native-") && name.endsWith(".dll"))
+                    .findFirst().orElseThrow(() -> new IOException("No installed loader proxy native library found."));
+                agents = "-agentpath:.leaf/lib/" + nativeName + " " + agents;
+            }
+        }
+        if (alternateLaunch) {
+            progress.updateProgress(Utils.BUNDLE.getString("progress.patch.alternate.launch"));
+            ClientLaunchOptions.patchAlternateLauncher(gameDir, proxy ? agents : "", mainClass);
+        }
+        if (steamLaunchOptions) {
+            progress.updateProgress(Utils.BUNDLE.getString("progress.patch.steam.launch.options"));
+            SteamLaunchOptions.update(gameDir, proxy ? agents + " --" : "-pzexeconfig " + configName + ".json");
         }
 
         progress.updateProgress(Utils.BUNDLE.getString("progress.done"));

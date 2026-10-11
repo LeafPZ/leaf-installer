@@ -98,6 +98,10 @@ public abstract class Handler implements InstallerProgress {
     public void setupPane2(JPanel pane, GridBagConstraints c, InstallerGui installerGui) {
     }
 
+    protected Component makeLaunchOptionsPanel(JPanel manualPanel) {
+        return manualPanel;
+    }
+
     public JPanel makePanel(InstallerGui installerGui) {
         pane = new JPanel(new GridBagLayout());
         pane.setBorder(new EmptyBorder(4, 4, 4, 4));
@@ -160,8 +164,7 @@ public abstract class Handler implements InstallerProgress {
         createConfigCheckbox.setEnabled(false);
         addRow(pane, c, null, createConfigCheckbox);
 
-        addRow(pane, c, null, statusLabel = new JLabel());
-        statusLabel.setText(Utils.BUNDLE.getString("prompt.loading.versions"));
+        statusLabel = new JLabel(Utils.BUNDLE.getString("prompt.loading.versions"));
 
         launchArguments = new JTextArea();
         launchArguments.setEditable(false);
@@ -179,20 +182,26 @@ public abstract class Handler implements InstallerProgress {
             install(loaderProxyCheckbox.isEnabled() && loaderProxyCheckbox.isSelected());
         });
 
-        addRow(pane, c, null, buttonInstall);
-        JSeparator separator = new JSeparator();
-        c.gridwidth = 2;
-        c.fill = GridBagConstraints.HORIZONTAL;
-        pane.add(separator, c);
-        c.gridy++;
-        addRow(pane, c, null, new JLabel(Utils.BUNDLE.getString("prompt.launch.arguments")));
+        JPanel manualPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints manualConstraints = new GridBagConstraints();
+        manualConstraints.gridx = manualConstraints.gridy = 0;
+        manualConstraints.insets = c.insets;
+        addRow(manualPanel, manualConstraints, null,
+            new JLabel(Utils.BUNDLE.getString("prompt.launch.arguments")));
         JPanel argumentsPanel = new JPanel();
         argumentsPanel.setOpaque(false);
         argumentsPanel.setBorder(UIManager.getBorder("TextField.border"));
         argumentsPanel.add(launchArguments);
         argumentsPanel.add(copyArgButton);
-        c.insets = new Insets(VERTICAL_SPACING, HORIZONTAL_SPACING, 2, HORIZONTAL_SPACING);
-        addLastRow(pane, c, null, argumentsPanel);
+        addRow(manualPanel, manualConstraints, null, argumentsPanel);
+        addRow(pane, c, null, makeLaunchOptionsPanel(manualPanel));
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        pane.add(new JSeparator(), c);
+        c.gridy++;
+        addRow(pane, c, null, statusLabel);
+        c.insets = new Insets(VERTICAL_SPACING, HORIZONTAL_SPACING, 10, HORIZONTAL_SPACING);
+        addLastRow(pane, c, null, buttonInstall);
 
         gameVersionComboBox.addActionListener(e -> updateLaunchArguments());
         loaderVersionComboBox.addActionListener(e -> {
