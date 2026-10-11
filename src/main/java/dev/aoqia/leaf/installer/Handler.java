@@ -165,7 +165,7 @@ public abstract class Handler implements InstallerProgress {
 
                     if (OperatingSystem.CURRENT == OperatingSystem.WINDOWS) {
                         String tag = Main.LATEST_PROXY_NATIVE_TAG;
-                        fmt += String.format("-agentlib:.leaf/lib/native-%s.dll",
+                        fmt += String.format("-agentpath:.leaf/lib/native-%s.dll",
                             tag.startsWith("v") ? tag.substring(1) : tag);
                         fmt += " ";
                     }
