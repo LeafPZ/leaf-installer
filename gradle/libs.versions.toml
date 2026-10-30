@@ -5,7 +5,7 @@ dsljson = "2.0.2"
 flatlaf = "3.7.2"
 junit = "4.13.2"
 shadow = "9.6.1"
-spotless = "8.9.0"
+spotless = "8.10.4"
 
 [libraries]
 commons-collections = { module = "org.apache.commons:commons-collections4", version.ref = "commons-collections" }
