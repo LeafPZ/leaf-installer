@@ -16,63 +16,34 @@
 package dev.aoqia.leaf.installer.util;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
-import dev.aoqia.leaf.installer.util.json.GitTree;
+import dev.aoqia.leaf.installer.util.json.github.TreeCommitInfo;
 
 /**
  * The primary use of this class is to parse git trees of a repository.
- * For example, this is used to get all the files in a specific folder under the leaf repository.
+ * For example, this is used to get all the files in a specific folder under a GitHub repository.
  */
 public class GithubMetaHandler extends LoaderMetaHandler {
-    private String[] subfolders;
-
     public GithubMetaHandler(String repoOwner, String repoName, String branch) {
-        super(String.format("%srepos/%s/%s/git/trees/%s", Reference.GITHUB_API, repoOwner, repoName, branch));
+        super(String.format("https://github.com/%s/%s/tree-commit-info/%s", repoOwner, repoName, branch));
     }
 
-    public GithubMetaHandler(String repoOwner, String repoName, String branch, String[] subfolders) {
-        super(String.format("%srepos/%s/%s/git/trees/%s", Reference.GITHUB_API, repoOwner, repoName, branch));
-        this.subfolders = subfolders;
+    public GithubMetaHandler(String repoOwner, String repoName, String branch, String subpath) {
+        super(String.format("https://github.com/%s/%s/tree-commit-info/%s/%s", repoOwner, repoName, branch, subpath));
     }
 
     @Override
     public void load() throws IOException {
-        GitTree.GitTreeObject[] tree = LeafService.queryJsonSubstitutedMaven(getMetaPath(), GitTree.class).tree();
+        TreeCommitInfo info = LeafService.queryJsonSubstitutedMaven(getMetaPath(), TreeCommitInfo.class);
 
-        // Resolve the subfolder tree if required, used to get files in loader/ folder.
-        if (this.subfolders != null) {
-            int subfoldersFound = 0;
-
-            int i = 0;
-            while (i < tree.length) {
-                GitTree.GitTreeObject node = tree[i];
-
-                if (node.type().equals("tree") && node.path().equals(this.subfolders[subfoldersFound])) {
-                    tree = LeafService.queryJsonSubstitutedMaven(node.url(), GitTree.class).tree();
-                    subfoldersFound++;
-                    i = 0;
-                }
-
-
-                if (subfoldersFound > this.subfolders.length) {
-                    break;
-                }
-
-                ++i;
-            }
-        }
-
-        List<Version> temp;
-
-        temp = Arrays
-            .stream(tree)
+        setVersions(info.entries()
+            .keySet()
+            .stream()
+            .map(s -> s.replace(".json", ""))
             .map(Version::new)
             .sorted((v1, v2) -> v2.id().compareToIgnoreCase(v1.id()))
-            .collect(Collectors.toList());
-        setVersions(temp);
+            .collect(Collectors.toList()));
 
         complete(getVersions());
     }

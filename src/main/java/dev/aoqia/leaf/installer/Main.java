@@ -68,7 +68,7 @@ public class Main {
         }
 
         GAME_VERSION_META = new GameMetaHandler(Reference.ZOMBOID_VERSION_MANIFEST);
-        LOADER_META = new GithubMetaHandler("LeafPZ", "leaf", "main", new String[] { "dist", "loader" });
+        LOADER_META = new GithubMetaHandler("LeafPZ", "leaf", "main", "dist/loader");
 
         if (OperatingSystem.CURRENT == OperatingSystem.WINDOWS) {
             try {

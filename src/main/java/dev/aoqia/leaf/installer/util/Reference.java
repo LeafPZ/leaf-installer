@@ -20,7 +20,6 @@ public class Reference {
     public static final String DEFAULT_API_SERVER = "https://maven.aoqia.dev/api/";
     static final String MANIFEST_REPOSITORY = "https://raw.githubusercontent.com/LeafPZ/leaf/refs/heads/main/";
     public static final String ZOMBOID_VERSION_MANIFEST = "dist/manifests/index.json";
-    static final String GITHUB_API = "https://api.github.com/";
     static final String DEFAULT_META_SERVER = MANIFEST_REPOSITORY;
     static final LeafService[] LEAF_SERVICES = {
         new LeafService(DEFAULT_META_SERVER, DEFAULT_MAVEN_SERVER, DEFAULT_API_SERVER),

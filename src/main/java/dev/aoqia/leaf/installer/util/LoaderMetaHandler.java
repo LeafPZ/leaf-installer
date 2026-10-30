@@ -18,8 +18,6 @@ package dev.aoqia.leaf.installer.util;
 import java.util.Collections;
 import java.util.List;
 
-import dev.aoqia.leaf.installer.util.json.GitTree;
-
 public abstract class LoaderMetaHandler extends MetaHandler<LoaderMetaHandler.Version> {
     private List<Version> versions;
 
@@ -57,9 +55,5 @@ public abstract class LoaderMetaHandler extends MetaHandler<LoaderMetaHandler.Ve
         this.versions = versions;
     }
 
-    public record Version(String id) {
-        public Version(GitTree.GitTreeObject object) {
-            this(object.path().replace(".json", ""));
-        }
-    }
+    public record Version(String id) {}
 }
