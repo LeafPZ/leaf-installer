@@ -36,6 +36,7 @@ package dev.aoqia.leaf.installer.util;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Map;
 
 public final class LeafService {
     // index into INSTANCES or -1 if set to a fixed service
@@ -113,6 +114,12 @@ public final class LeafService {
             (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.meta + arg).toURL()),
                 clazz),
             path);
+    }
+
+    public static <T> T queryJsonWithHeaders(String url, Class<T> clazz, Map<String, String> headers)
+        throws IOException
+    {
+        return Utils.deserializeJson(HttpClient.readString(URI.create(url).toURL(), headers), clazz);
     }
 
     /**

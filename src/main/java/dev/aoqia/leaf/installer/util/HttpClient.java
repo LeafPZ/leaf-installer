@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class HttpClient {
@@ -91,6 +92,10 @@ public final class HttpClient {
         return tryWithProxies(url, Utils::readString);
     }
 
+    public static String readString(URL url, Map<String, String> headers) throws IOException {
+        return tryWithProxies(url, Utils::readString, headers);
+    }
+
     // Returns the list of proxies set via environment variables.
     // This reads the de-facto standard environment variables used by CURL, see https://superuser.com/a/1166790
     private static List<Proxy> getEnvironmentProxies(URI uri) {
@@ -124,8 +129,12 @@ public final class HttpClient {
         return proxies;
     }
 
-    private static InputStream openUrl(URL url, Proxy proxy) throws IOException {
+    private static InputStream openUrl(URL url, Proxy proxy, Map<String, String> headers) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
+
+        for (var header : headers.entrySet()) {
+            conn.setRequestProperty(header.getKey(), header.getValue());
+        }
 
         conn.setConnectTimeout(HTTP_TIMEOUT_MS);
         conn.setReadTimeout(HTTP_TIMEOUT_MS);
@@ -148,6 +157,10 @@ public final class HttpClient {
     }
 
     private static <T> T tryWithProxies(URL url, Handler<T> handler) throws IOException {
+        return tryWithProxies(url, handler, Map.of());
+    }
+
+    private static <T> T tryWithProxies(URL url, Handler<T> handler, Map<String, String> headers) throws IOException {
         URI uri;
 
         try {
@@ -163,7 +176,7 @@ public final class HttpClient {
         if (lastSuccessfulProxy != null) {
             attemptedProxies.add(lastSuccessfulProxy);
 
-            try (InputStream is = openUrl(url, lastSuccessfulProxy)) {
+            try (InputStream is = openUrl(url, lastSuccessfulProxy, headers)) {
                 return handler.read(is);
             } catch (IOException e) {
                 // failed, remove priority for the specific proxy
@@ -191,7 +204,7 @@ public final class HttpClient {
                 try {
                     T value;
 
-                    try (InputStream is = openUrl(url, proxy)) {
+                    try (InputStream is = openUrl(url, proxy, headers)) {
                         value = handler.read(is);
                     }
 

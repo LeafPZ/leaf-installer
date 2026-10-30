@@ -20,6 +20,7 @@
 package dev.aoqia.leaf.installer.util;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import dev.aoqia.leaf.installer.util.json.github.TreeCommitInfo;
@@ -29,17 +30,41 @@ import dev.aoqia.leaf.installer.util.json.github.TreeCommitInfo;
  * For example, this is used to get all the files in a specific folder under a GitHub repository.
  */
 public class GithubMetaHandler extends LoaderMetaHandler {
+    private final String repoOwner;
+    private final String repoName;
+    private final String branch;
+    private final String subpath;
+
     public GithubMetaHandler(String repoOwner, String repoName, String branch) {
         super(String.format("https://github.com/%s/%s/tree-commit-info/%s", repoOwner, repoName, branch));
+
+        this.repoOwner = repoOwner;
+        this.repoName = repoName;
+        this.branch = branch;
+        this.subpath = null;
     }
 
     public GithubMetaHandler(String repoOwner, String repoName, String branch, String subpath) {
         super(String.format("https://github.com/%s/%s/tree-commit-info/%s/%s", repoOwner, repoName, branch, subpath));
+
+        this.repoOwner = repoOwner;
+        this.repoName = repoName;
+        this.branch = branch;
+        this.subpath = subpath;
     }
 
     @Override
     public void load() throws IOException {
-        TreeCommitInfo info = LeafService.queryJsonSubstitutedMaven(getMetaPath(), TreeCommitInfo.class);
+        // spotless:off
+        // checkstyle:off
+        TreeCommitInfo info = LeafService.queryJsonWithHeaders(getMetaPath(), TreeCommitInfo.class,
+            Map.of(
+                "Accept", "application/json",
+                "Referer", String.format("https://github.com/%s/%s/tree/%s%s", repoOwner, repoName, branch,
+                    subpath != null ? "/" + subpath : "")
+            ));
+        // checkstyle:on
+        // spotless:on
 
         setVersions(info.entries()
             .keySet()
