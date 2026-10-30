@@ -33,10 +33,6 @@
 
 package dev.aoqia.leaf.installer;
 
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JTabbedPane;
-import javax.swing.WindowConstants;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.Toolkit;
@@ -45,6 +41,10 @@ import java.lang.reflect.Method;
 import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
+import javax.swing.WindowConstants;
 
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 

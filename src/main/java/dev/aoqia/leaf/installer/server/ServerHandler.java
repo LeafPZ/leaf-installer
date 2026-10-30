@@ -33,9 +33,6 @@
 
 package dev.aoqia.leaf.installer.server;
 
-import javax.swing.JCheckBox;
-import javax.swing.JPanel;
-import java.awt.Desktop;
 import java.awt.GridBagConstraints;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -43,6 +40,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
 
 import dev.aoqia.leaf.installer.Handler;
 import dev.aoqia.leaf.installer.InstallerGui;
@@ -56,8 +55,10 @@ public class ServerHandler extends Handler {
     public JCheckBox createScriptCheckbox;
 
     @Override
-    public String name() {
-        return Utils.BUNDLE.getString("tab.server");
+    public String cliHelp() {
+        return "-dir <install dir> -- (default: current dir) "
+            + "-game <version> -- (default: latest) "
+            + "-loader <loader version> -- (default: latest)";
     }
 
     @Override
@@ -84,17 +85,8 @@ public class ServerHandler extends Handler {
     }
 
     @Override
-    public String cliHelp() {
-        return "-dir <install dir> -- (default: current dir) "
-            + "-game <version> -- (default: latest) "
-            + "-loader <loader version> -- (default: latest)";
-    }
-
-    @Override
-    public void setupPane1(JPanel pane, GridBagConstraints c, InstallerGui installerGui) {
-        if (!Desktop.isDesktopSupported() ||
-            !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-        }
+    public String name() {
+        return Utils.BUNDLE.getString("tab.server");
     }
 
     @Override

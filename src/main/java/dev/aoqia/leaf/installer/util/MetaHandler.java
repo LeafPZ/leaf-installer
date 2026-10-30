@@ -43,10 +43,11 @@ public abstract class MetaHandler<T> extends CompletableHandler<List<T>> {
         this.metaPath = metaPath;
     }
 
-    public abstract void load() throws IOException;
-    public abstract T parseVersion(String value, boolean snapshot);
-
     public String getMetaPath() {
         return metaPath;
     }
+
+    public abstract void load() throws IOException;
+
+    public abstract T parseVersion(String value, boolean snapshot);
 }

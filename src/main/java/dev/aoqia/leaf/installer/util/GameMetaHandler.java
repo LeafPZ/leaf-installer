@@ -33,13 +33,6 @@ public class GameMetaHandler extends MetaHandler<GameMetaHandler.Version> {
         super(metaPath);
     }
 
-    @Override
-    public void load() throws IOException {
-        VersionTable versionTable = LeafService.queryMetaJson(getMetaPath(), VersionTable.class);
-        this.versions = versionTable.versions().keySet().stream().map(Version::new).toList();
-        complete(this.versions);
-    }
-
     public Version getLatestVersion(boolean prerelease) {
         if (versions.isEmpty()) {
             throw new RuntimeException("no versions available at " + getMetaPath());
@@ -56,6 +49,17 @@ public class GameMetaHandler extends MetaHandler<GameMetaHandler.Version> {
         return versions.get(0);
     }
 
+    public List<Version> getVersions() {
+        return Collections.unmodifiableList(versions);
+    }
+
+    @Override
+    public void load() throws IOException {
+        VersionTable versionTable = LeafService.queryMetaJson(getMetaPath(), VersionTable.class);
+        this.versions = versionTable.versions().keySet().stream().map(Version::new).toList();
+        complete(this.versions);
+    }
+
     public Version parseVersion(String value, boolean prerelease) {
         if (value == null || value.isEmpty() || value.equalsIgnoreCase("latest")) {
             return getLatestVersion(prerelease);
@@ -68,10 +72,6 @@ public class GameMetaHandler extends MetaHandler<GameMetaHandler.Version> {
 
             return null;
         }
-    }
-
-    public List<Version> getVersions() {
-        return Collections.unmodifiableList(versions);
     }
 
     public record Version(String id) {

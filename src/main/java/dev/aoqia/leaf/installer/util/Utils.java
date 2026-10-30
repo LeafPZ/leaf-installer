@@ -52,7 +52,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
@@ -66,11 +65,14 @@ import static dev.aoqia.leaf.installer.Main.JSON;
 public class Utils {
     public static final String LEAF_FOLDER = ".leaf";
     public static final ResourceBundle BUNDLE = ResourceBundle.getBundle("lang/installer", Locale.getDefault(),
-        new ResourceBundle.Control() {
+        new ResourceBundle.Control()
+        {
             @Override
             public ResourceBundle newBundle(String baseName, Locale locale, String format, ClassLoader loader,
                 boolean reload) throws IllegalAccessException, InstantiationException, IOException
+            // spotless:off
             {
+                // spotless:on
                 final String bundleName = toBundleName(baseName, locale);
                 final String resourceName = toResourceName(bundleName, "properties").toLowerCase(Locale.ROOT);
 
@@ -90,14 +92,96 @@ public class Utils {
 
     private static Library LOADER_PROXY = null;
 
-    public static Path getDefaultSteamLibraryPath() {
-        if (OperatingSystem.CURRENT == OperatingSystem.MACOS) {
-            return Path.of(System.getProperty("user.home"), "Library", "Application Support", "Steam");
-        } else if (OperatingSystem.CURRENT == OperatingSystem.LINUX) {
-            return Path.of(System.getProperty("user.home"), ".steam", "steam");
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder output = new StringBuilder();
+
+        for (byte b : bytes) {
+            output.append(String.format(Locale.ENGLISH, "%02x", b));
         }
 
-        return Path.of("C:\\", "Program Files (x86)", "Steam");
+        return output.toString();
+    }
+
+    /**
+     * Simple semver-like version comparison.
+     *
+     * @return (0, 0, )0 if versionA is less/same/greater than versionB
+     */
+    public static int compareVersions(String versionA, String versionB) {
+        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)*)(?:-([^+]+))?(?:\\+.*)?");
+        Matcher matcherA = pattern.matcher(versionA);
+        Matcher matcherB = pattern.matcher(versionB);
+        if (!matcherA.matches() || !matcherB.matches()) {
+            return versionA.compareTo(versionB);
+        }
+
+        int cmp = compareVersionGroups(matcherA.group(1), matcherB.group(1));
+        // compare version core
+        if (cmp != 0) {
+            return cmp;
+        }
+
+        boolean aHasPreRelease = matcherA.group(2) != null;
+        boolean bHasPreRelease = matcherB.group(2) != null;
+
+        // compare pre-release presence
+        if (aHasPreRelease != bHasPreRelease) {
+            return aHasPreRelease ? -1 : 1;
+        }
+
+        if (aHasPreRelease) {
+            // compare pre-release
+            cmp = compareVersionGroups(matcherA.group(2), matcherB.group(2));
+            return cmp;
+        }
+
+        return 0;
+    }
+
+    public static void deleteDirectory(Path dir) throws IOException {
+        if (!Files.exists(dir)) {
+            return;
+        }
+
+        Files.walkFileTree(dir, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                if (exc != null) {
+                    throw exc;
+                }
+
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    public static <T> T deserializeJson(byte[] byteStr, Class<T> clazz) throws IOException {
+        ByteArrayInputStream is = new ByteArrayInputStream(byteStr);
+        return JSON.deserialize(clazz, is);
+    }
+
+    public static <T> T deserializeJson(InputStream is, Class<T> clazz) throws IOException {
+        return JSON.deserialize(clazz, is);
+    }
+
+    public static <T> T deserializeJson(String str, Class<T> clazz) throws IOException {
+        return deserializeJson(str.getBytes(), clazz);
+    }
+
+    public static Path getClientGamePath() {
+        var path = System.getenv("LEAF_CLIENT_GAME_PATH");
+        if (path != null) {
+            return Path.of(path);
+        }
+
+        return getDefaultClientGamePath();
     }
 
     public static Path getDefaultClientGamePath() {
@@ -111,13 +195,47 @@ public class Utils {
             .resolve("Project Zomboid Dedicated Server");
     }
 
-    public static Path getClientGamePath() {
-        var path = System.getenv("LEAF_CLIENT_GAME_PATH");
-        if (path != null) {
-            return Path.of(path);
+    public static Path getDefaultSteamLibraryPath() {
+        if (OperatingSystem.CURRENT == OperatingSystem.MACOS) {
+            return Path.of(System.getProperty("user.home"), "Library", "Application Support", "Steam");
+        } else if (OperatingSystem.CURRENT == OperatingSystem.LINUX) {
+            return Path.of(System.getProperty("user.home"), ".steam", "steam");
         }
 
-        return getDefaultClientGamePath();
+        return Path.of("C:\\", "Program Files (x86)", "Steam");
+    }
+
+    public static String getGitHubReleaseTagForRepo(URI uri) throws IOException, InterruptedException {
+        @SuppressWarnings("resource")
+        HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+
+        HttpRequest req = HttpRequest.newBuilder(uri).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
+        HttpResponse<Void> resp = client.send(req, HttpResponse.BodyHandlers.discarding());
+
+        String location = resp.headers()
+            .firstValue("Location")
+            .orElseThrow(() -> new IllegalStateException("No redirect Location header found"));
+
+        String marker = "/tag/";
+        int idx = location.indexOf(marker);
+        if (idx < 0) {
+            throw new IllegalStateException("Unexpected redirect target: " + location);
+        }
+
+        return location.substring(idx + marker.length()).trim().split("\\s+")[0];
+    }
+
+    public static Library getLatestLoaderProxy() throws IOException {
+        if (LOADER_PROXY != null) {
+            return LOADER_PROXY;
+        }
+
+        LOADER_PROXY = new Library("dev.aoqia.leaf:loader-proxy:0.0.0", Reference.DEFAULT_MAVEN_SERVER);
+        var latest = LeafService.queryApiJson("maven/latest/version/releases/" + LOADER_PROXY.getBasePath(),
+            LatestVersion.class);
+        LOADER_PROXY.version = latest.version();
+
+        return LOADER_PROXY;
     }
 
     public static Path getServerGamePath() {
@@ -129,8 +247,16 @@ public class Utils {
         return getDefaultServerGamePath();
     }
 
-    public static String readString(Path path) throws IOException {
-        return Files.readString(path);
+    public static Path normaliseClientGamePath(Path p) {
+        return switch (OperatingSystem.CURRENT) {
+            case LINUX -> p.resolve("projectzomboid");
+            case MACOS -> p.resolve("Contents/Java");
+            default -> p;
+        };
+    }
+
+    public static Path normaliseServerGamePath(Path p) {
+        return p.resolve("java");
     }
 
     public static String readString(InputStream is) throws IOException {
@@ -159,77 +285,12 @@ public class Utils {
         return new String(data, 0, offset, StandardCharsets.UTF_8);
     }
 
-    public static String getGitHubReleaseTagForRepo(URI uri) throws IOException, InterruptedException {
-        @SuppressWarnings("resource")
-        HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
-
-        HttpRequest req = HttpRequest.newBuilder(uri).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
-        HttpResponse<Void> resp = client.send(req, HttpResponse.BodyHandlers.discarding());
-
-        String location = resp.headers()
-            .firstValue("Location")
-            .orElseThrow(() -> new IllegalStateException("No redirect Location header found"));
-
-        String marker = "/tag/";
-        int idx = location.indexOf(marker);
-        if (idx < 0) {
-            throw new IllegalStateException("Unexpected redirect target: " + location);
-        }
-
-        return location.substring(idx + marker.length()).trim().split("\\s+")[0];
+    public static String readString(Path path) throws IOException {
+        return Files.readString(path);
     }
 
-    public static void writeToFile(Path path, String string) throws IOException {
-        Files.writeString(path, string);
-    }
-
-    public static void deleteDirectory(Path dir) throws IOException {
-        if (!Files.exists(dir)) {
-            return;
-        }
-
-        Files.walkFileTree(dir, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                if (exc != null) {
-                    throw exc;
-                }
-
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
-
-    public static String getProfileIcon() {
-        try (InputStream is = Utils.class.getClassLoader().getResourceAsStream("profile_icon.png")) {
-            byte[] ret = new byte[4096];
-            int offset = 0;
-            int len;
-
-            while ((len = is.read(ret, offset, ret.length - offset)) != -1) {
-                offset += len;
-                if (offset == ret.length) {
-                    ret = Arrays.copyOf(ret, ret.length * 2);
-                }
-            }
-
-            return "data:image/png;base64," + Base64.getEncoder().encodeToString(Arrays.copyOf(ret, offset));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return "TNT"; // Fallback to TNT icon if we cant load Fabric icon.
-    }
-
-    public static String sha1String(Path path) throws IOException {
-        return bytesToHex(sha1(path));
+    public static <T> void serializeJson(T obj, OutputStream stream) throws IOException {
+        JSON.serialize(obj, stream);
     }
 
     public static byte[] sha1(Path path) throws IOException {
@@ -247,55 +308,12 @@ public class Utils {
         return digest.digest();
     }
 
-    private static MessageDigest sha1Digest() {
-        try {
-            return MessageDigest.getInstance("SHA-1");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Something has gone really wrong", e);
-        }
+    public static String sha1String(Path path) throws IOException {
+        return bytesToHex(sha1(path));
     }
 
-    public static String bytesToHex(byte[] bytes) {
-        StringBuilder output = new StringBuilder();
-
-        for (byte b : bytes) {
-            output.append(String.format(Locale.ENGLISH, "%02x", b));
-        }
-
-        return output.toString();
-    }
-
-    /**
-     * Simple semver-like version comparison.
-     *
-     * @return (0, 0, )0 if versionA is less/same/greater than versionB
-     */
-    public static int compareVersions(String versionA, String versionB) {
-        Pattern pattern = Pattern.compile("(\\d+(?:\\.\\d+)*)(?:-([^+]+))?(?:\\+.*)?");
-        Matcher matcherA = pattern.matcher(versionA);
-        Matcher matcherB = pattern.matcher(versionB);
-        if (!matcherA.matches() || !matcherB.matches()) {
-            return versionA.compareTo(versionB);
-        }
-
-        int cmp = compareVersionGroups(matcherA.group(1), matcherB.group(1)); // compare version core
-        if (cmp != 0) {
-            return cmp;
-        }
-
-        boolean aHasPreRelease = matcherA.group(2) != null;
-        boolean bHasPreRelease = matcherB.group(2) != null;
-
-        if (aHasPreRelease != bHasPreRelease) { // compare pre-release presence
-            return aHasPreRelease ? -1 : 1;
-        }
-
-        if (aHasPreRelease) {
-            cmp = compareVersionGroups(matcherA.group(2), matcherB.group(2)); // compare pre-release
-            return cmp;
-        }
-
-        return 0;
+    public static void writeToFile(Path path, String string) throws IOException {
+        Files.writeString(path, string);
     }
 
     private static int compareVersionGroups(String groupA, String groupB) {
@@ -311,70 +329,40 @@ public class Utils {
 
                 try {
                     int b = Integer.parseInt(partB);
-                    int cmp = Integer.compare(a, b); // both numeric, compare int value
+                    // both numeric, compare int value
+                    int cmp = Integer.compare(a, b);
                     if (cmp != 0) {
                         return cmp;
                     }
                 } catch (NumberFormatException e) {
-                    return -1; // only a numeric
+                    // only a numeric
+                    return -1;
                 }
             } catch (NumberFormatException e) {
                 try {
                     Integer.parseInt(partB);
-                    return 1; // only b numeric
-                } catch (NumberFormatException e2) {
-                    // ignore
+                    // only b numeric
+                    return 1;
+                } catch (NumberFormatException ignored) {
                 }
             }
 
-            int cmp = partA.compareTo(partB); // neither numeric, compare lexicographically
+            // neither numeric, compare lexicographically
+            int cmp = partA.compareTo(partB);
             if (cmp != 0) {
                 return cmp;
             }
         }
 
-        return Integer.compare(partsA.length, partsB.length); // compare part count
+        // compare part count
+        return Integer.compare(partsA.length, partsB.length);
     }
 
-    public static <T> T deserializeJson(byte[] byteStr, Class<T> clazz) throws IOException {
-        ByteArrayInputStream is = new ByteArrayInputStream(byteStr);
-        return JSON.deserialize(clazz, is);
-    }
-
-    public static <T> T deserializeJson(InputStream is, Class<T> clazz) throws IOException {
-        return JSON.deserialize(clazz, is);
-    }
-
-    public static <T> T deserializeJson(String str, Class<T> clazz) throws IOException {
-        return deserializeJson(str.getBytes(), clazz);
-    }
-
-    public static <T> void serializeJson(T obj, OutputStream stream) throws IOException {
-        JSON.serialize(obj, stream);
-    }
-
-    public static Library getLatestLoaderProxy() throws IOException {
-        if (LOADER_PROXY != null) {
-            return LOADER_PROXY;
+    private static MessageDigest sha1Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Something has gone really wrong", e);
         }
-
-        LOADER_PROXY = new Library("dev.aoqia.leaf:loader-proxy:0.0.0", Reference.DEFAULT_MAVEN_SERVER);
-        var latest = LeafService.queryApiJson("maven/latest/version/releases/" + LOADER_PROXY.getBasePath(),
-            LatestVersion.class);
-        LOADER_PROXY.version = latest.version();
-
-        return LOADER_PROXY;
-    }
-
-    public static Path normaliseClientGamePath(Path p) {
-        return switch (OperatingSystem.CURRENT) {
-            case LINUX -> p.resolve("projectzomboid");
-            case MACOS -> p.resolve("Contents/Java");
-            default -> p;
-        };
-    }
-
-    public static Path normaliseServerGamePath(Path p) {
-        return p.resolve("java");
     }
 }

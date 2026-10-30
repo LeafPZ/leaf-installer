@@ -41,6 +41,10 @@ public class CompletableHandler<T> {
     private final List<Consumer<T>> completeConsumers = new ArrayList<>();
     private boolean complete;
 
+    public boolean isComplete() {
+        return complete;
+    }
+
     public void onComplete(Consumer<T> completeConsumer) {
         completeConsumers.add(completeConsumer);
     }
@@ -48,9 +52,5 @@ public class CompletableHandler<T> {
     protected void complete(T value) {
         complete = true;
         completeConsumers.forEach(listConsumer -> listConsumer.accept(value));
-    }
-
-    public boolean isComplete() {
-        return complete;
     }
 }

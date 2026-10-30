@@ -61,8 +61,12 @@ public class ArgumentTests {
     }
 
     @Test
-    public void testUnknownArg() {
-        Assert.assertNull(ArgumentParser.create(new String[] { "-arg1=Hello" }).get("arg2"));
+    public void testCommands() {
+        Assert.assertTrue(ArgumentParser.create(new String[] { "command", "-arg1=Hello" }).getCommand().isPresent());
+        Assert.assertEquals(ArgumentParser.create(new String[] { "command", "-arg1=Hello" }).getCommand().get(),
+            "command");
+
+        Assert.assertFalse(ArgumentParser.create(new String[] { "-arg1=Hello" }).getCommand().isPresent());
     }
 
     @Test
@@ -71,11 +75,7 @@ public class ArgumentTests {
     }
 
     @Test
-    public void testCommands() {
-        Assert.assertTrue(ArgumentParser.create(new String[] { "command", "-arg1=Hello" }).getCommand().isPresent());
-        Assert.assertEquals(ArgumentParser.create(new String[] { "command", "-arg1=Hello" }).getCommand().get(),
-            "command");
-
-        Assert.assertFalse(ArgumentParser.create(new String[] { "-arg1=Hello" }).getCommand().isPresent());
+    public void testUnknownArg() {
+        Assert.assertNull(ArgumentParser.create(new String[] { "-arg1=Hello" }).get("arg2"));
     }
 }

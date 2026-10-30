@@ -33,20 +33,6 @@
 
 package dev.aoqia.leaf.installer;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JEditorPane;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.UIManager;
-import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -63,6 +49,20 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Locale;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import dev.aoqia.leaf.installer.util.ArgumentParser;
 import dev.aoqia.leaf.installer.util.GameMetaHandler;
@@ -95,20 +95,34 @@ public abstract class Handler implements InstallerProgress {
         return Box.createRigidArea(new Dimension(4, 0));
     }
 
-    public abstract String name();
+    public abstract String cliHelp();
+
+    @Override
+    public void error(Throwable throwable) {
+        StringWriter sw = new StringWriter(800);
+
+        try (PrintWriter pw = new PrintWriter(sw)) {
+            throwable.printStackTrace(pw);
+        }
+
+        String st = sw.toString().trim();
+        System.err.println(st);
+
+        String html = String.format("<html><body style=\"%s\">%s</body></html>", buildEditorPaneStyle(),
+            st.replace(System.lineSeparator(), "<br>").replace("\t", "&ensp;"));
+        JEditorPane textPane = new JEditorPane("text/html", html);
+        textPane.setEditable(false);
+
+        statusLabel.setText(throwable.getLocalizedMessage());
+        statusLabel.setForeground(Color.RED);
+
+        JOptionPane.showMessageDialog(pane, textPane, Utils.BUNDLE.getString("prompt.exception.occurrence"),
+            JOptionPane.ERROR_MESSAGE);
+    }
 
     public abstract void install(boolean proxy);
 
     public abstract void installCli(ArgumentParser args) throws Exception;
-
-    public abstract String cliHelp();
-
-    // this isnt great, but works
-    public void setupPane1(JPanel pane, GridBagConstraints c, InstallerGui installerGui) {
-    }
-
-    public void setupPane2(JPanel pane, GridBagConstraints c, InstallerGui installerGui) {
-    }
 
     public JPanel makePanel(InstallerGui installerGui) {
         pane = new JPanel(new GridBagLayout());
@@ -216,33 +230,44 @@ public abstract class Handler implements InstallerProgress {
         return pane;
     }
 
-    private void updateGameVersions(List<GameMetaHandler.Version> versions) {
-        gameVersionComboBox.removeAllItems();
+    public abstract String name();
 
-        for (GameMetaHandler.Version version : versions) {
-            if (!prereleaseCheckbox.isSelected() && version.isPrerelease()) {
-                continue;
-            }
-
-            gameVersionComboBox.addItem(version.id());
-        }
-        gameVersionComboBox.setSelectedIndex(0);
-
-        InstallerGui.instance.updateSize(false);
+    // this isnt great, but works
+    public void setupPane1(JPanel pane, GridBagConstraints c, InstallerGui installerGui) {
     }
 
-    private void updateLoaderVersions(List<LoaderMetaHandler.Version> versions) {
-        loaderVersionComboBox.removeAllItems();
+    public void setupPane2(JPanel pane, GridBagConstraints c, InstallerGui installerGui) {
+    }
 
-        for (LoaderMetaHandler.Version version : versions) {
-            loaderVersionComboBox.addItem(version.id());
-        }
+    @Override
+    public void updateProgress(String text) {
+        statusLabel.setText(text);
+        statusLabel.setForeground(UIManager.getColor("Label.foreground"));
+    }
 
-        loaderVersionComboBox.addItem(SELECT_CUSTOM_ITEM);
+    protected void addLastRow(Container parent, GridBagConstraints c, String label, Component... components) {
+        addRow(parent, c, true, label, components);
+    }
 
-        loaderVersionComboBox.setSelectedIndex(0);
-        statusLabel.setText(Utils.BUNDLE.getString("prompt.ready.install"));
-        InstallerGui.instance.updateSize(false);
+    protected void addRow(Container parent, GridBagConstraints c, String label, Component... components) {
+        addRow(parent, c, false, label, components);
+    }
+
+    protected String buildEditorPaneStyle() {
+        JLabel label = new JLabel();
+        Font font = label.getFont();
+        Color color = label.getBackground();
+        return String.format(Locale.ENGLISH,
+            "font-family:%s;font-weight:%s;font-size:%dpt;background-color: rgb(%d,%d," + "%d);", font.getFamily(),
+            (font.isBold() ? "bold" : "normal"), font.getSize(), color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    protected String getGameVersion(ArgumentParser args) {
+        return GAME_VERSION_META.parseVersion(args.get("gameVersion"), args.has("prerelease")).id();
+    }
+
+    protected String getLoaderVersion(ArgumentParser args) {
+        return LOADER_META.parseVersion(args.get("loader"), false).id();
     }
 
     protected LoaderVersion queryLoaderVersion() {
@@ -275,52 +300,6 @@ public abstract class Handler implements InstallerProgress {
                 return null;
             }
         }
-    }
-
-    @Override
-    public void updateProgress(String text) {
-        statusLabel.setText(text);
-        statusLabel.setForeground(UIManager.getColor("Label.foreground"));
-    }
-
-    @Override
-    public void error(Throwable throwable) {
-        StringWriter sw = new StringWriter(800);
-
-        try (PrintWriter pw = new PrintWriter(sw)) {
-            throwable.printStackTrace(pw);
-        }
-
-        String st = sw.toString().trim();
-        System.err.println(st);
-
-        String html = String.format("<html><body style=\"%s\">%s</body></html>", buildEditorPaneStyle(),
-            st.replace(System.lineSeparator(), "<br>").replace("\t", "&ensp;"));
-        JEditorPane textPane = new JEditorPane("text/html", html);
-        textPane.setEditable(false);
-
-        statusLabel.setText(throwable.getLocalizedMessage());
-        statusLabel.setForeground(Color.RED);
-
-        JOptionPane.showMessageDialog(pane, textPane, Utils.BUNDLE.getString("prompt.exception.occurrence"),
-            JOptionPane.ERROR_MESSAGE);
-    }
-
-    protected String buildEditorPaneStyle() {
-        JLabel label = new JLabel();
-        Font font = label.getFont();
-        Color color = label.getBackground();
-        return String.format(Locale.ENGLISH,
-            "font-family:%s;font-weight:%s;font-size:%dpt;background-color: rgb(%d,%d," + "%d);", font.getFamily(),
-            (font.isBold() ? "bold" : "normal"), font.getSize(), color.getRed(), color.getGreen(), color.getBlue());
-    }
-
-    protected void addRow(Container parent, GridBagConstraints c, String label, Component... components) {
-        addRow(parent, c, false, label, components);
-    }
-
-    protected void addLastRow(Container parent, GridBagConstraints c, String label, Component... components) {
-        addRow(parent, c, true, label, components);
     }
 
     private void addRow(Container parent, GridBagConstraints c, boolean last, String label, Component... components) {
@@ -357,11 +336,32 @@ public abstract class Handler implements InstallerProgress {
         c.gridx = 0;
     }
 
-    protected String getGameVersion(ArgumentParser args) {
-        return GAME_VERSION_META.parseVersion(args.get("gameVersion"), args.has("prerelease")).id();
+    private void updateGameVersions(List<GameMetaHandler.Version> versions) {
+        gameVersionComboBox.removeAllItems();
+
+        for (GameMetaHandler.Version version : versions) {
+            if (!prereleaseCheckbox.isSelected() && version.isPrerelease()) {
+                continue;
+            }
+
+            gameVersionComboBox.addItem(version.id());
+        }
+        gameVersionComboBox.setSelectedIndex(0);
+
+        InstallerGui.instance.updateSize(false);
     }
 
-    protected String getLoaderVersion(ArgumentParser args) {
-        return LOADER_META.parseVersion(args.get("loader"), false).id();
+    private void updateLoaderVersions(List<LoaderMetaHandler.Version> versions) {
+        loaderVersionComboBox.removeAllItems();
+
+        for (LoaderMetaHandler.Version version : versions) {
+            loaderVersionComboBox.addItem(version.id());
+        }
+
+        loaderVersionComboBox.addItem(SELECT_CUSTOM_ITEM);
+
+        loaderVersionComboBox.setSelectedIndex(0);
+        statusLabel.setText(Utils.BUNDLE.getString("prompt.ready.install"));
+        InstallerGui.instance.updateSize(false);
     }
 }

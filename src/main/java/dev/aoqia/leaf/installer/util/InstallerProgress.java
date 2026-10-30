@@ -36,17 +36,17 @@ package dev.aoqia.leaf.installer.util;
 public interface InstallerProgress {
     InstallerProgress CONSOLE = new InstallerProgress() {
         @Override
-        public void updateProgress(String text) {
-            System.out.println(text);
-        }
-
-        @Override
         public void error(Throwable throwable) {
             throw new RuntimeException(throwable);
         }
+
+        @Override
+        public void updateProgress(String text) {
+            System.out.println(text);
+        }
     };
 
-    void updateProgress(String text);
-
     void error(Throwable throwable);
+
+    void updateProgress(String text);
 }

@@ -60,6 +60,15 @@ public class Main {
 
     public static String LATEST_PROXY_NATIVE_TAG = null;
 
+    public static void loadMetadata() {
+        try {
+            LOADER_META.load();
+            GAME_VERSION_META.load();
+        } catch (Throwable t) {
+            throw new RuntimeException("Unable to load metadata", t);
+        }
+    }
+
     public static void main(String[] args) {
         if (OperatingSystem.CURRENT == OperatingSystem.WINDOWS) {
             // Use the operating system cert store
@@ -132,15 +141,6 @@ public class Main {
             }
 
             System.out.println("No handler found for " + args[0] + " see help");
-        }
-    }
-
-    public static void loadMetadata() {
-        try {
-            LOADER_META.load();
-            GAME_VERSION_META.load();
-        } catch (Throwable t) {
-            throw new RuntimeException("Unable to load metadata", t);
         }
     }
 }

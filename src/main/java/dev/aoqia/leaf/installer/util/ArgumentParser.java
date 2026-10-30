@@ -41,7 +41,7 @@ import java.util.function.Supplier;
 public class ArgumentParser {
     private final String[] args;
     private Map<String, String> argMap;
-    //The command will be the first argument passed, and if it doesnt start with -
+    // The command will be the first argument passed, and if it doesnt start with -
     private String command = null;
 
     private ArgumentParser(String[] args) {
@@ -55,6 +55,10 @@ public class ArgumentParser {
 
     public String get(String argument) {
         return argMap.get(argument);
+    }
+
+    public Optional<String> getCommand() {
+        return command == null ? Optional.empty() : Optional.of(command);
     }
 
     public String getOrDefault(String argument, Supplier<String> stringSuppler) {
@@ -71,10 +75,6 @@ public class ArgumentParser {
         return argMap.containsKey(argument);
     }
 
-    public Optional<String> getCommand() {
-        return command == null ? Optional.empty() : Optional.of(command);
-    }
-
     private void parse() {
         argMap = new HashMap<>();
 
@@ -85,8 +85,8 @@ public class ArgumentParser {
 
                 // If it's an arg like -test=123
                 if (args[i].contains("=")) {
-                    final String truekey = key.substring(0, key.indexOf("="));
-                    value = key.substring(key.indexOf("=") + 1);
+                    final String truekey = key.substring(0, key.indexOf('='));
+                    value = key.substring(key.indexOf('=') + 1);
                     argMap.put(truekey, value);
                     continue;
                 }
@@ -95,10 +95,10 @@ public class ArgumentParser {
                     throw new IllegalArgumentException(String.format("Argument %s already passed", key));
                 }
 
-				argMap.put(key, value);
-			} else if (i == 0) {
-				command = args[i];
-			}
-		}
-	}
+                argMap.put(key, value);
+            } else if (i == 0) {
+                command = args[i];
+            }
+        }
+    }
 }

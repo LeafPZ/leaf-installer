@@ -36,5 +36,7 @@ public record TreeCommitInfo(Map<String, Entry> entries) {
         @JsonAttribute(ignore = true) String oid,
         String url,
         String date,
-        @JsonAttribute(ignore = true) Object shortMessageHtmlLink) {}
+        @JsonAttribute(ignore = true) Object shortMessageHtmlLink
+    )
+    {}
 }

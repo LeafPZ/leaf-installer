@@ -48,83 +48,83 @@ import java.util.concurrent.Executors;
  * Do not use this in production; it is for testing purposes only.
  */
 public class HttpProxyServer {
-	public static void main(String[] args) throws Exception {
-		try (ServerSocket server = new ServerSocket(8888)) {
-			ExecutorService pool = Executors.newCachedThreadPool();
+    public static void main(String[] args) throws Exception {
+        try (ServerSocket server = new ServerSocket(8888)) {
+            ExecutorService pool = Executors.newCachedThreadPool();
 
-			while (true) {
-				Socket client = server.accept();
-				pool.submit(() -> handle(client));
-			}
-		}
-	}
+            while (true) {
+                Socket client = server.accept();
+                pool.submit(() -> handle(client));
+            }
+        }
+    }
 
-	static void handle(Socket client) {
-		System.out.println("New connection from " + client.getInetAddress() + ":" + client.getPort());
+    static void copy(Socket inSock, Socket outSock) {
+        try {
+            InputStream in = inSock.getInputStream();
+            OutputStream out = outSock.getOutputStream();
+            byte[] buf = new byte[8192];
+            int len;
 
-		try {
-			InputStream in = client.getInputStream();
-			OutputStream out = client.getOutputStream();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-			String line = reader.readLine();
+            while ((len = in.read(buf)) != -1) {
+                out.write(buf, 0, len);
+                out.flush();
+            }
+        } catch (Exception ignored) {
+            // Ignored
+        } finally {
+            try {
+                inSock.close();
+            } catch (Exception ignored) {
+                // Ignored
+            }
 
-			if (line == null || !line.startsWith("CONNECT")) {
-				client.close();
-				return;
-			}
+            try {
+                outSock.close();
+            } catch (Exception ignored) {
+                // Ignored
+            }
+        }
+    }
 
-			String[] parts = line.split(" ");
-			String[] hostPort = parts[1].split(":");
-			String host = hostPort[0];
-			int port = Integer.parseInt(hostPort[1]);
+    static void forward(Socket a, Socket b) {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        pool.submit(() -> copy(a, b));
+        pool.submit(() -> copy(b, a));
+    }
 
-			while (!reader.readLine().isEmpty()) {
-				// Read the remaining headers
-			}
+    static void handle(Socket client) {
+        System.out.println("New connection from " + client.getInetAddress() + ":" + client.getPort());
 
-			Socket remote = new Socket(host, port);
-			out.write("HTTP/1.1 200 Connection Established\r\n\r\n".getBytes(StandardCharsets.UTF_8));
-			forward(client, remote);
-		} catch (Exception e) {
-			try {
-				client.close();
-			} catch (Exception ignored) {
-				// Do nothing
-			}
-		}
-	}
+        try {
+            InputStream in = client.getInputStream();
+            OutputStream out = client.getOutputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            String line = reader.readLine();
 
-	static void forward(Socket a, Socket b) {
-		ExecutorService pool = Executors.newFixedThreadPool(2);
-		pool.submit(() -> copy(a, b));
-		pool.submit(() -> copy(b, a));
-	}
+            if (line == null || !line.startsWith("CONNECT")) {
+                client.close();
+                return;
+            }
 
-	static void copy(Socket inSock, Socket outSock) {
-		try {
-			InputStream in = inSock.getInputStream();
-			OutputStream out = outSock.getOutputStream();
-			byte[] buf = new byte[8192];
-			int len;
+            String[] parts = line.split(" ");
+            String[] hostPort = parts[1].split(":");
+            String host = hostPort[0];
+            int port = Integer.parseInt(hostPort[1]);
 
-			while ((len = in.read(buf)) != -1) {
-				out.write(buf, 0, len);
-				out.flush();
-			}
-		} catch (Exception ignored) {
-			// Ignored
-		} finally {
-			try {
-				inSock.close();
-			} catch (Exception ignored) {
-				// Ignored
-			}
+            while (!reader.readLine().isEmpty()) {
+                // Read the remaining headers
+            }
 
-			try {
-				outSock.close();
-			} catch (Exception ignored) {
-				// Ignored
-			}
-		}
-	}
+            Socket remote = new Socket(host, port);
+            out.write("HTTP/1.1 200 Connection Established\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            forward(client, remote);
+        } catch (Exception e) {
+            try {
+                client.close();
+            } catch (Exception ignored) {
+                // Do nothing
+            }
+        }
+    }
 }

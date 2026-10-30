@@ -51,6 +51,10 @@ public abstract class LoaderMetaHandler extends MetaHandler<LoaderMetaHandler.Ve
         return versions.get(0);
     }
 
+    public List<Version> getVersions() {
+        return Collections.unmodifiableList(versions);
+    }
+
     public Version parseVersion(String value, boolean snapshot) {
         if (value == null || value.isEmpty() || value.equalsIgnoreCase("latest")) {
             return getLatestVersion();
@@ -63,10 +67,6 @@ public abstract class LoaderMetaHandler extends MetaHandler<LoaderMetaHandler.Ve
 
             return null;
         }
-    }
-
-    public List<Version> getVersions() {
-        return Collections.unmodifiableList(versions);
     }
 
     public void setVersions(List<Version> versions) {

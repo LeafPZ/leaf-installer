@@ -44,16 +44,6 @@ public class Library {
     public String artifactId;
     public String version;
 
-    public Library(String dependency, String url) {
-        this.dependency = dependency;
-        this.url = url;
-
-        final var parts = dependency.split(":", 3);
-        this.groupId = parts[0];
-        this.artifactId = parts[1];
-        this.version = parts[2];
-    }
-
     public Library(LoaderJson.Library library) {
         this.dependency = library.name();
         this.url = library.url();
@@ -64,9 +54,22 @@ public class Library {
         this.version = parts[2];
     }
 
-    public String getURL() {
-        return url + "%s/%s/%s/%s-%s.jar".formatted(groupId.replace(".", "/"), artifactId, version, artifactId,
-            version);
+    public Library(String dependency, String url) {
+        this.dependency = dependency;
+        this.url = url;
+
+        final var parts = dependency.split(":", 3);
+        this.groupId = parts[0];
+        this.artifactId = parts[1];
+        this.version = parts[2];
+    }
+
+    public String getBasePath() {
+        return "%s/%s".formatted(groupId.replace(".", "/"), artifactId);
+    }
+
+    public String getJarName() {
+        return "%s-%s.jar".formatted(artifactId, version);
     }
 
     public String getPath() {
@@ -76,11 +79,8 @@ public class Library {
             .replaceAll("/", File.separator);
     }
 
-    public String getBasePath() {
-        return "%s/%s".formatted(groupId.replace(".", "/"), artifactId);
-    }
-
-    public String getJarName() {
-        return "%s-%s.jar".formatted(artifactId, version);
+    public String getURL() {
+        return url + "%s/%s/%s/%s-%s.jar".formatted(groupId.replace(".", "/"), artifactId, version, artifactId,
+            version);
     }
 }

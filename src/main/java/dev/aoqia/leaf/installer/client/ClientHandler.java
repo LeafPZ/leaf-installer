@@ -33,12 +33,6 @@
 
 package dev.aoqia.leaf.installer.client;
 
-import javax.swing.ImageIcon;
-import javax.swing.JEditorPane;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.event.HyperlinkEvent;
 import java.awt.Color;
 import java.awt.Desktop;
 import java.awt.GridBagConstraints;
@@ -50,6 +44,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import javax.swing.ImageIcon;
+import javax.swing.JEditorPane;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.HyperlinkEvent;
 
 import dev.aoqia.leaf.installer.Handler;
 import dev.aoqia.leaf.installer.InstallerGui;
@@ -61,8 +61,11 @@ import dev.aoqia.leaf.installer.util.Utils;
 
 public class ClientHandler extends Handler {
     @Override
-    public String name() {
-        return Utils.BUNDLE.getString("tab.client");
+    public String cliHelp() {
+        return "-dir <install dir> -- (default: current dir) "
+            + "-game <version> -- (default: latest) "
+            + "-loader <version> -- (default: latest) "
+            + "-manual -- (default: null)";
     }
 
     @Override
@@ -99,11 +102,8 @@ public class ClientHandler extends Handler {
     }
 
     @Override
-    public String cliHelp() {
-        return "-dir <install dir> -- (default: current dir) "
-            + "-game <version> -- (default: latest) "
-            + "-loader <version> -- (default: latest) "
-            + "-manual -- (default: null)";
+    public String name() {
+        return Utils.BUNDLE.getString("tab.client");
     }
 
     @Override

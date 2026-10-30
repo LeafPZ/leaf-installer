@@ -49,11 +49,6 @@ public final class LoaderVersion {
     public final String name;
     public final Path path;
 
-    public LoaderVersion(String name) {
-        this.name = name;
-        this.path = null;
-    }
-
     public LoaderVersion(Path path) throws IOException {
         try (ZipFile zf = new ZipFile(path.toFile())) {
             ZipEntry entry = zf.getEntry("leaf.mod.json");
@@ -73,6 +68,11 @@ public final class LoaderVersion {
         }
 
         this.path = path;
+    }
+
+    public LoaderVersion(String name) {
+        this.name = name;
+        this.path = null;
     }
 
     @CompiledJson

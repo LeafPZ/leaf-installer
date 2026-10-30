@@ -38,7 +38,8 @@ import java.net.URI;
 import java.nio.file.Path;
 
 public final class LeafService {
-    private static int activeIndex = 0; // index into INSTANCES or -1 if set to a fixed service
+    // index into INSTANCES or -1 if set to a fixed service
+    private static int activeIndex = 0;
     private static LeafService fixedService;
 
     private final String meta;
@@ -51,41 +52,8 @@ public final class LeafService {
         this.api = api;
     }
 
-    /**
-     * Query Leaf Meta path and decode as JSON.
-     */
-    public static <T> T queryMetaJson(String path, Class<T> clazz) throws IOException {
-        return invokeWithFallbacks(
-            (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.meta + arg).toURL()),
-                clazz), path);
-    }
-
-    /**
-     * Query API path and decode as JSON.
-     */
-    public static <T> T queryApiJson(String path, Class<T> clazz) throws IOException {
-        return invokeWithFallbacks(
-            (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.api + arg).toURL()),
-                clazz), path);
-    }
-
-    /**
-     * Query and decode JSON from url, substituting aoqia maven with fallbacks or overrides.
-     */
-    public static <T> T queryJsonSubstitutedMaven(String url, Class<T> clazz) throws IOException {
-        if (!url.startsWith(Reference.DEFAULT_MAVEN_SERVER)) {
-            return Utils.deserializeJson(HttpClient.readString(URI.create(url).toURL()), clazz);
-        }
-
-        String path = url.substring(Reference.DEFAULT_MAVEN_SERVER.length());
-
-        return invokeWithFallbacks(
-            (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.meta + arg).toURL()),
-                clazz), path);
-    }
-
-    public static void downloadLatestGitHubRelease(String repoOwner, String repoName, Path out) throws
-        IOException, InterruptedException
+    public static void downloadLatestGitHubRelease(String repoOwner, String repoName, Path out)
+        throws IOException, InterruptedException
     {
         String tag = getLatestGitHubRelease(repoOwner, repoName);
         String version = tag.startsWith("v") ? tag.substring(1) : tag;
@@ -95,13 +63,6 @@ public final class LeafService {
         downloadSubstitutedMaven(
             String.format("https://github.com/%s/%s/releases/download/%s/%s", repoOwner, repoName, tag, filename),
             out.resolve(filename));
-    }
-
-    public static String getLatestGitHubRelease(String repoOwner, String repoName) throws IOException,
-        InterruptedException
-    {
-        return Utils.getGitHubReleaseTagForRepo(
-            URI.create(String.format("https://github.com/%s/%s/releases/latest", repoOwner, repoName)));
     }
 
     /**
@@ -119,6 +80,71 @@ public final class LeafService {
             HttpClient.downloadFile(URI.create(service.maven + arg).toURL(), out);
             return null;
         }, path);
+    }
+
+    public static String getLatestGitHubRelease(String repoOwner, String repoName) throws IOException,
+        InterruptedException
+    {
+        return Utils.getGitHubReleaseTagForRepo(
+            URI.create(String.format("https://github.com/%s/%s/releases/latest", repoOwner, repoName)));
+    }
+
+    /**
+     * Query API path and decode as JSON.
+     */
+    public static <T> T queryApiJson(String path, Class<T> clazz) throws IOException {
+        return invokeWithFallbacks(
+            (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.api + arg).toURL()),
+                clazz),
+            path);
+    }
+
+    /**
+     * Query and decode JSON from url, substituting aoqia maven with fallbacks or overrides.
+     */
+    public static <T> T queryJsonSubstitutedMaven(String url, Class<T> clazz) throws IOException {
+        if (!url.startsWith(Reference.DEFAULT_MAVEN_SERVER)) {
+            return Utils.deserializeJson(HttpClient.readString(URI.create(url).toURL()), clazz);
+        }
+
+        String path = url.substring(Reference.DEFAULT_MAVEN_SERVER.length());
+
+        return invokeWithFallbacks(
+            (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.meta + arg).toURL()),
+                clazz),
+            path);
+    }
+
+    /**
+     * Query Leaf Meta path and decode as JSON.
+     */
+    public static <T> T queryMetaJson(String path, Class<T> clazz) throws IOException {
+        return invokeWithFallbacks(
+            (service, arg) -> Utils.deserializeJson(HttpClient.readString(URI.create(service.meta + arg).toURL()),
+                clazz),
+            path);
+    }
+
+    /**
+     * Configure fixed service urls, disabling fallbacks or the defaults.
+     */
+    public static void setFixed(String metaUrl, String mavenUrl, String apiUrl) {
+        if (metaUrl == null && mavenUrl == null && apiUrl == null) {
+            throw new NullPointerException("all of meta/maven/api are null");
+        }
+
+        if (metaUrl == null) {
+            metaUrl = Reference.DEFAULT_META_SERVER;
+        }
+        if (mavenUrl == null) {
+            mavenUrl = Reference.DEFAULT_MAVEN_SERVER;
+        }
+        if (apiUrl == null) {
+            apiUrl = Reference.DEFAULT_API_SERVER;
+        }
+
+        activeIndex = -1;
+        fixedService = new LeafService(metaUrl, mavenUrl, apiUrl);
     }
 
     private static <A, R> R invokeWithFallbacks(Handler<A, R> handler, A arg) throws IOException {
@@ -153,34 +179,12 @@ public final class LeafService {
         throw exc;
     }
 
-    /**
-     * Configure fixed service urls, disabling fallbacks or the defaults.
-     */
-    public static void setFixed(String metaUrl, String mavenUrl, String apiUrl) {
-        if (metaUrl == null && mavenUrl == null && apiUrl == null) {
-            throw new NullPointerException("all of meta/maven/api are null");
-        }
-
-        if (metaUrl == null) {
-            metaUrl = Reference.DEFAULT_META_SERVER;
-        }
-        if (mavenUrl == null) {
-            mavenUrl = Reference.DEFAULT_MAVEN_SERVER;
-        }
-        if (apiUrl == null) {
-            apiUrl = Reference.DEFAULT_API_SERVER;
-        }
-
-        activeIndex = -1;
-        fixedService = new LeafService(metaUrl, mavenUrl, apiUrl);
+    public String getMavenUrl() {
+        return maven;
     }
 
     public String getMetaUrl() {
         return meta;
-    }
-
-    public String getMavenUrl() {
-        return maven;
     }
 
     @Override

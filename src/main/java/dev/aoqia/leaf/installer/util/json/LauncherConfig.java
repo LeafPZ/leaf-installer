@@ -29,5 +29,6 @@ public final class LauncherConfig {
     public List<String> vmArgs;
     public List<String> classpath;
 
-    public LauncherConfig() {}
+    public LauncherConfig() {
+    }
 }

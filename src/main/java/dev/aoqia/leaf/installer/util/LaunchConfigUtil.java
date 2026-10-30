@@ -101,6 +101,31 @@ public class LaunchConfigUtil {
         }
     }
 
+    /*
+     * Don't use this function by any means currently.
+     * Linux servers don't need to edit any scripts.
+     * Instead, only configs should be edited because start-server.sh acts as the bootstrapper.
+     */
+    private void createScriptLinux(String name, String mainClass, String templateData) throws IOException {
+        var newScript = templateData;
+
+        // Edit classpath
+        final var pattern =
+            Pattern.compile("^(\\s*export\\s+LD_LIBRARY_PATH=\").+\"$", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+        final var matcher = pattern.matcher(templateData);
+        if (!matcher.find()) {
+            throw new RuntimeException("Failed to find match regex in launch script");
+        }
+
+        newScript =
+            newScript.replace(matcher.group(1), matcher.group(1) + "${INSTDIR}/" + Utils.LEAF_FOLDER + "/libraries:");
+
+        final var out = gameDir.resolve(name + ".sh");
+        Files.writeString(out, newScript);
+
+        out.toFile().setExecutable(true, false);
+    }
+
     private void createScriptWindows(String name, String mainClass, String templateData) throws IOException {
         final var pattern = Pattern.compile("^SET\\s*PZ_CLASSPATH=(.+)[\\r\\n]+.*-cp.*(zombie(?:\\.\\w+)+)",
             Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
@@ -111,40 +136,12 @@ public class LaunchConfigUtil {
         }
 
         var libs = new StringBuilder(matcher.group(1));
-        try (final var stream = Files.walk(this.leafLibDir).filter(Files::isRegularFile)) {
+        try (var stream = Files.walk(this.leafLibDir).filter(Files::isRegularFile)) {
             stream.forEach(lib -> libs.append(this.gameDir.relativize(lib)).append(";"));
         }
 
         final var newScript = templateData.replace(matcher.group(1), libs).replace(matcher.group(2), mainClass);
-        final var out = gameDir.resolve(name + ".bat");
-        Files.writeString(out, newScript);
-
-        out.toFile().setExecutable(true, false);
-    }
-
-    /*
-     * Don't use this function by any means currently.
-     * Linux servers don't need to edit any scripts.
-     * Instead, only configs should be edited because start-server.sh acts as the bootstrapper.
-     */
-    private void createScriptLinux(String name, String mainClass, String templateData) throws IOException {
-        var newScript = templateData;
-
-        // Edit classpath
-        {
-            final var pattern = Pattern.compile("^(\\s*export\\s+LD_LIBRARY_PATH=\").+\"$",
-                Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
-
-            final var matcher = pattern.matcher(templateData);
-            if (!matcher.find()) {
-                throw new RuntimeException("Failed to find match regex in launch script");
-            }
-
-            newScript = newScript.replace(matcher.group(1),
-                matcher.group(1) + "${INSTDIR}/" + Utils.LEAF_FOLDER + "/libraries:");
-        }
-
-        final var out = gameDir.resolve(name + ".sh");
+        var out = gameDir.resolve(name + ".bat");
         Files.writeString(out, newScript);
 
         out.toFile().setExecutable(true, false);

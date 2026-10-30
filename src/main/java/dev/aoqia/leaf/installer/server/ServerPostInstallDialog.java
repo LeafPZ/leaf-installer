@@ -33,11 +33,20 @@
 
 package dev.aoqia.leaf.installer.server;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.HeadlessException;
+import java.awt.Toolkit;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 import dev.aoqia.leaf.installer.InstallerGui;
 import dev.aoqia.leaf.installer.util.Utils;
@@ -67,6 +76,22 @@ public class ServerPostInstallDialog extends JDialog {
         dialog.setVisible(true);
     }
 
+    private void addRow(Container parent, Consumer<JPanel> consumer) {
+        JPanel panel = new JPanel(new FlowLayout());
+        consumer.accept(panel);
+        parent.add(panel);
+    }
+
+    private JLabel color(JLabel label, Color color) {
+        label.setForeground(color);
+        return label;
+    }
+
+    private JLabel fontSize(JLabel label, int size) {
+        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, size));
+        return label;
+    }
+
     private void initComponents() {
         addRow(panel, panel -> panel.add(fontSize(new JLabel(Utils.BUNDLE.getString("progress.done.server")), 20)));
 
@@ -78,21 +103,5 @@ public class ServerPostInstallDialog extends JDialog {
             });
             panel.add(closeButton);
         });
-    }
-
-    private JLabel fontSize(JLabel label, int size) {
-        label.setFont(new Font(label.getFont().getName(), Font.PLAIN, size));
-        return label;
-    }
-
-    private JLabel color(JLabel label, Color color) {
-        label.setForeground(color);
-        return label;
-    }
-
-    private void addRow(Container parent, Consumer<JPanel> consumer) {
-        JPanel panel = new JPanel(new FlowLayout());
-        consumer.accept(panel);
-        parent.add(panel);
     }
 }

@@ -33,10 +33,14 @@
 
 package dev.aoqia.leaf.installer.util;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Container;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.WindowConstants;
 
 public class CrashDialog {
     public CrashDialog(Throwable throwable) {

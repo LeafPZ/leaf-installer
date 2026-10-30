@@ -30,7 +30,9 @@ public record LoaderJson(Libraries libraries, MainClass mainClass) {
         List<Library> client,
         List<Library> common,
         List<Library> server,
-        List<Library> development) {}
+        List<Library> development
+    )
+    {}
 
     @CompiledJson
     public record Library(String name, String url, String md5, String sha1, String sha256, String sha512, Long size) {}
