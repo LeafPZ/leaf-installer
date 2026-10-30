@@ -1,29 +1,14 @@
 name: Triage
-
 on:
   issues:
-    types:
-      - opened
-  pull_request:
-    types:
-      - opened
-
+    types: [opened, reopened]
+  pull_request_target:
+    types: [opened, reopened]
+permissions: {}
 jobs:
   triage:
-    name: Add to project
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate App Token
-        id: generate_app_token
-        # v3.2.0
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-        with:
-          client-id: ${{ secrets.TRIAGE_BOT_CLIENT_ID }}
-          private-key: ${{ secrets.TRIAGE_BOT_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-      - name: Add to project
-        # v2
-        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd
-        with:
-          project-url: https://github.com/orgs/${{ github.repository_owner }}/projects/2
-          github-token: ${{ steps.generate_app_token.outputs.token }}
+    name: Triage
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: LeafPZ/.github/.github/workflows/triage.yml@f64a78c8e2fc4f53f46e54691beff22ebb22f289
