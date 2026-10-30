@@ -5,16 +5,23 @@
 !/gradle
 !/src
 
-!/.editorconfig
 !/.cliff.toml
+!/.editorconfig
+!/.git-blame-ignore-revs
 !/.gitignore
+!/AGENTS.md
 !/build.gradle.kts
 !/checkstyle.xml
+!/CLAUDE.md
 !/crowdin.yml
+!/eclipse-formatter.xml
 !/gradle.properties
 !/gradlew
 !/gradlew.bat
 !/HEADER
+!/HEADER_UPSTREAM
 !/LICENSE
+!/LICENSE_EXCEPTION.md
+!/LICENSE_UPSTREAM
 !/README.md
 !/settings.gradle.kts
