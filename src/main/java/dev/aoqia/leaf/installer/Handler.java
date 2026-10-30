@@ -67,7 +67,7 @@ public abstract class Handler implements InstallerProgress {
     public JTextField installLocation;
     public JButton selectFolderButton;
     public JLabel statusLabel;
-    public JCheckBox unstableCheckbox;
+    public JCheckBox prereleaseCheckbox;
     public JCheckBox loaderProxyCheckbox;
     public JComboBox<String> loaderVersionComboBox;
     public JCheckBox createConfigCheckbox;
@@ -105,16 +105,16 @@ public abstract class Handler implements InstallerProgress {
         gameVersionComboBox = new JComboBox<>();
         gameVersionComboBox.setEnabled(false);
 
-        unstableCheckbox = new JCheckBox(Utils.BUNDLE.getString("option.show.unstable"));
-        unstableCheckbox.setEnabled(false);
-        unstableCheckbox.setSelected(false);
-        unstableCheckbox.addActionListener(e -> {
+        prereleaseCheckbox = new JCheckBox(Utils.BUNDLE.getString("option.show.prerelease"));
+        prereleaseCheckbox.setEnabled(false);
+        prereleaseCheckbox.setSelected(false);
+        prereleaseCheckbox.addActionListener(e -> {
             if (GAME_VERSION_META.isComplete()) {
                 updateGameVersions(GAME_VERSION_META.getVersions());
             }
         });
 
-        addRow(pane, c, "prompt.game.version", gameVersionComboBox, createSpacer(), unstableCheckbox);
+        addRow(pane, c, "prompt.game.version", gameVersionComboBox, createSpacer(), prereleaseCheckbox);
         GAME_VERSION_META.onComplete(this::updateGameVersions);
 
         loaderVersionComboBox = new JComboBox<>();
@@ -127,7 +127,7 @@ public abstract class Handler implements InstallerProgress {
             final boolean selected = loaderProxyCheckbox.isSelected();
 
             gameVersionComboBox.setEnabled(!selected);
-            unstableCheckbox.setEnabled(!selected);
+            prereleaseCheckbox.setEnabled(!selected);
             loaderVersionComboBox.setEnabled(!selected);
             createConfigCheckbox.setEnabled(!selected);
 
@@ -202,7 +202,7 @@ public abstract class Handler implements InstallerProgress {
         gameVersionComboBox.removeAllItems();
 
         for (GameMetaHandler.Version version : versions) {
-            if (!unstableCheckbox.isSelected() && version.isUnstable()) {
+            if (!prereleaseCheckbox.isSelected() && version.isPrerelease()) {
                 continue;
             }
 
@@ -340,7 +340,7 @@ public abstract class Handler implements InstallerProgress {
     }
 
     protected String getGameVersion(ArgumentParser args) {
-        return GAME_VERSION_META.parseVersion(args.get("gameVersion"), args.has("unstable")).id();
+        return GAME_VERSION_META.parseVersion(args.get("gameVersion"), args.has("prerelease")).id();
     }
 
     protected String getLoaderVersion(ArgumentParser args) {

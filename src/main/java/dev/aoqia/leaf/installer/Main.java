@@ -96,7 +96,7 @@ public class Main {
             loadMetadata();
 
             System.out.printf("\nLatest Version: %s\nLatest Loader: %s\n",
-                GAME_VERSION_META.getLatestVersion(argumentParser.has("unstable")).id(),
+                GAME_VERSION_META.getLatestVersion(argumentParser.has("prerelease")).id(),
                 LOADER_META.getLatestVersion().id());
         } else {
             loadMetadata();

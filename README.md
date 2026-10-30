@@ -88,15 +88,15 @@ If you are using the proxy and do not want to use the installer, you may downloa
 
 #### Installer
 
-| Option           | Description                                                                         |
-|------------------|-------------------------------------------------------------------------------------|
-| `Game Version`   | Game version to target. Is disabled when `Use proxy` is active                      |
-| `Loader Version` | Loader version to install. Is disabled when `Use proxy` is active                   |
-| `Game Location`  | Path to Project Zomboid Steam game installation                                     |
-| `Show unstable`  | Shows unstable game versions                                                        |
-| `Use proxy`      | Installs the [loader proxy][LeafLoaderProxy] instead of the loader itself           |
-| `Create config`  | Creates a game launcher config. Is disabled when `Use proxy` is active              |
-| `Create script`  | **NOT RECOMMENDED**. Creates a modified launch script. Only for server environments |
+| Option             | Description                                                                         |
+|--------------------|-------------------------------------------------------------------------------------|
+| `Game Version`     | Game version to target. Is disabled when `Use proxy` is active                      |
+| `Loader Version`   | Loader version to install. Is disabled when `Use proxy` is active                   |
+| `Game Location`    | Path to Project Zomboid Steam game installation                                     |
+| `Show pre-release` | Shows pre-release game versions                                                     |
+| `Use proxy`        | Installs the [loader proxy][LeafLoaderProxy] instead of the loader itself           |
+| `Create config`    | Creates a game launcher config. Is disabled when `Use proxy` is active              |
+| `Create script`    | **NOT RECOMMENDED**. Creates a modified launch script. Only for server environments |
 
 #### Environment
 

@@ -16,10 +16,8 @@
 package dev.aoqia.leaf.installer.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import dev.aoqia.leaf.installer.util.json.GameManifestVersion;
 import dev.aoqia.leaf.installer.util.json.VersionTable;
@@ -38,14 +36,14 @@ public class GameMetaHandler extends MetaHandler<GameMetaHandler.Version> {
         complete(this.versions);
     }
 
-    public Version getLatestVersion(boolean unstable) {
+    public Version getLatestVersion(boolean prerelease) {
         if (versions.isEmpty()) {
             throw new RuntimeException("no versions available at " + getMetaPath());
         }
 
-        if (unstable) {
+        if (prerelease) {
             for (Version version : versions) {
-                if (version.isUnstable()) {
+                if (version.isPrerelease()) {
                     return version;
                 }
             }
@@ -54,9 +52,9 @@ public class GameMetaHandler extends MetaHandler<GameMetaHandler.Version> {
         return versions.get(0);
     }
 
-    public Version parseVersion(String value, boolean unstable) {
+    public Version parseVersion(String value, boolean prerelease) {
         if (value == null || value.isEmpty() || value.equalsIgnoreCase("latest")) {
-            return getLatestVersion(unstable);
+            return getLatestVersion(prerelease);
         } else {
             for (Version version : versions) {
                 if (version.id.equals(value)) {
@@ -77,8 +75,8 @@ public class GameMetaHandler extends MetaHandler<GameMetaHandler.Version> {
             this(version.id);
         }
 
-        public boolean isUnstable() {
-            return id.contains("-unstable");
+        public boolean isPrerelease() {
+            return id.contains("pre-release");
         }
     }
 }
