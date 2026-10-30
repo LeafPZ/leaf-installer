@@ -72,7 +72,7 @@ tasks {
         manifest {
             attributes(
                 mapOf(
-                    "Implementation-Title" to "LeafInstaller",
+                    "Implementation-Title" to "leaf-${project.name}",
                     "Implementation-Version" to project.version,
                     "Main-Class" to "${project.group}.${project.name}.Main"
                 )
@@ -147,23 +147,15 @@ publishing {
                     }
                 }
 
-                issueManagement {
-                    system = "GitHub"
-                    url = "${property("url").toString()}/issues"
-                }
-
                 licenses {
+                    license {
+                        name = "AGPL-3.0-or-later"
+                        url = "https://spdx.org/licenses/AGPL-3.0-or-later.html"
+                    }
                     license {
                         name = "Apache-2.0"
                         url = "https://spdx.org/licenses/Apache-2.0.html"
                     }
-                }
-
-                scm {
-                    connection = "scm:git:${property("url").toString()}.git"
-                    developerConnection =
-                        "scm:git:${property("url").toString().replace("https", "ssh")}.git"
-                    url = property("url").toString()
                 }
             }
         }
