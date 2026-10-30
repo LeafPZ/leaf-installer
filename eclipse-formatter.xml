@@ -64,10 +64,10 @@
     Brace positions
 
     Valid values:
-      - same_line
-      - next_line
-      - next_line_indented
-      - next_line_on_wrap
+    - same_line
+    - next_line
+    - next_line_indented
+    - next_line_on_wrap
     -->
 
     <!-- Class or interface declaration -->
@@ -107,11 +107,11 @@
     Parentheses positions
 
     Valid values:
-      - common_lines
-      - separate_lines_if_wrapped
-      - separate_lines_if_not_empty
-      - separate_lines
-      - preserve_positions
+    - common_lines
+    - separate_lines_if_wrapped
+    - separate_lines_if_not_empty
+    - separate_lines
+    - preserve_positions
     -->
 
     <!-- Method/constructor declaration -->
@@ -141,8 +141,8 @@
     Whitespace
 
     Valid values:
-      - do not insert
-      - insert
+    - do not insert
+    - insert
     -->
 
     <!--
@@ -851,11 +851,11 @@
     New Lines / Keep braced code on one line
 
     Valid values:
-      - one_line_never
-      - one_line_if_empty
-      - one_line_if_single_item
-      - one_line_always
-      - one_line_preserve
+    - one_line_never
+    - one_line_if_empty
+    - one_line_if_single_item
+    - one_line_always
+    - one_line_preserve
     -->
 
     <!-- Loop body ('for', 'while', 'do while') -->
@@ -869,7 +869,7 @@
     <!-- Switch case with arrow -->
     <setting id="org.eclipse.jdt.core.formatter.keep_switch_case_with_arrow_on_one_line" value="one_line_preserve"/>
     <!-- Switch expression/statement with arrows -->
-   <setting id="org.eclipse.jdt.core.formatter.keep_switch_body_block_on_one_line" value="one_line_never"/>
+    <setting id="org.eclipse.jdt.core.formatter.keep_switch_body_block_on_one_line" value="one_line_never"/>
     <!-- Other code blocks in statements -->
     <setting id="org.eclipse.jdt.core.formatter.keep_code_block_on_one_line" value="one_line_never"/>
     <!-- Method declaration -->
@@ -912,19 +912,19 @@
     Enum from the Eclipse JDT formatter code from GitHub (DefaultCodeFormatterOptions.java)
 
     Alignment modes:
-        0 = Default
-        1 = Force
-        2 = Indent on column
-        4 = Indent by one
-        8 = Preserve indents
+    0 = Default
+    1 = Force
+    2 = Indent on column
+    4 = Indent by one
+    8 = Preserve indents
 
     Split modes:
-        0 = Do not wrap
-        16 = Wrap where necessary
-        32 = Wrap first element, others where necessary
-        48 = Wrap all elements, every element on a new line
-        64 = Wrap all elements, indent all but the first element
-        80 = Wrap all elements, except first element if not necessary
+    0 = Do not wrap
+    16 = Wrap where necessary
+    32 = Wrap first element, others where necessary
+    48 = Wrap all elements, every element on a new line
+    64 = Wrap all elements, indent all but the first element
+    80 = Wrap all elements, except first element if not necessary
     -->
 
     <!--
@@ -1049,8 +1049,8 @@
     <!-- 'try-with-resources' -->
     <setting id="org.eclipse.jdt.core.formatter.alignment_for_resources_in_try" value="82"/>
     <!-- 'multi-catch' -->
-    <setting id="org.eclipse.jdt.core.formatter.wrap_before_or_operator_multicatch" value="false"/>
-    <setting id="org.eclipse.jdt.core.formatter.alignment_for_union_type_in_multicatch" value="18"/>
+    <setting id="org.eclipse.jdt.core.formatter.wrap_before_or_operator_multicatch" value="true"/>
+    <setting id="org.eclipse.jdt.core.formatter.alignment_for_union_type_in_multicatch" value="16"/>
     <!-- 'switch' case with arrow -->
     <setting id="org.eclipse.jdt.core.formatter.wrap_before_switch_case_arrow_operator" value="false"/>
     <setting id="org.eclipse.jdt.core.formatter.alignment_for_switch_case_with_arrow" value="20"/>
